@@ -1,10 +1,8 @@
 
 const request = require("supertest")
 const app = require("../../src/express")
-console.log(app)
 
 describe("Car value API tests", () => {
-  // ✅ Test with a valid car model and year
   test("Valid car model and year", async () => {
     const response = await request(app)
       .post("/api/v1/calculate-car-value")

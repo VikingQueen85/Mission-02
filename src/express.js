@@ -1,17 +1,24 @@
 
 const express = require("express");
+
+// --- Import Routes ---
 const calculateCarValue = require("./carValue");
 const carValueRoutes = require("./routes/carValueRoutes");
-const discountRoute = require("../src/routes/discountRoute");
-const premiumQuoteRoutes = require("../src/routes/premiumQuoteRoutes");
+const discountRoute = require("./routes/discountRoute"); 
+const premiumQuoteRoutes = require("./routes/premiumQuoteRoutes");
 
 const app = express();
 
-// Middleware to parse JSON bodies
-app.use(express.json()); // To parse incoming requests with JSON payloads
+// --- Core Middleware ---
+app.use(express.json());
+app.use(express.json());
+
+app.use("/api/v1", carValueRoutes);
+app.use("/api/v1", discountRoute);
+app.use("/api/v1/quote", premiumQuoteRoutes);
 
 //========== ROUTES ==========//
-// Define the car value route
+
 app.post("/api/v1/calculate-car-value", (req, res) => {
   const { carModel, year } = req.body;
 
@@ -33,13 +40,37 @@ app.use(carValueRoutes);
 app.use("/api/v1", discountRoute);
 app.use("/api/v1/quote", premiumQuoteRoutes);
 
-//============================//
+app.use((req, res, next) => {
+  if (!res.headersSent) {
+    res.status(404).json({ error: "Not Found" });
+  } else {
+    next();
+  }
+});
 
-// Error handling middleware
+// --- Global Error Handling Middleware ---
+
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err); // Log the error
+  console.error("Unhandled application error:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err.status || 500).json({
+    error: err.message || "Internal Server Error"
+  });
+  console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal Server Error" });
 });
+
+// --- Server Initialization ---
+const PORT = process.env.PORT || 3000;
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 // Export the app instance for use in other files
 module.exports = app;
